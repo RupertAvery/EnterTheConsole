@@ -1,5 +1,7 @@
 # Digital Rain in the Terminal
 
+<img width="1396" height="726" alt="image" src="https://github.com/user-attachments/assets/5318276c-8cfa-4ff8-9552-ae15985213e7" />
+
 This is a sample program that demonstrates buffered drawing to the terminal using P/Invoke.  
 
 As you progress in C#, you might find yourself trying to build more complex console programs and encountering flickering and lag. This is an inherent limitation of using the default Console methods, because these methods are designed for immediate text ouput, not graphics.
