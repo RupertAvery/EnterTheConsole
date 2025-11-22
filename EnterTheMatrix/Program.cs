@@ -9,8 +9,11 @@ namespace EnterTheMatrix
             Console.CursorVisible = false;
 
             int width = Console.WindowWidth, height = Console.WindowHeight;
-            
+
             bool showFPS = false;
+            // Buffer for the displayed fps etc.
+            // The length should be enough for at least "Frames: 1000000000\r\nFPS: 1000000000\r\nDelay: 1000000000ms".
+            Span<char> statsTextBuffer = stackalloc char[64];
             int delay = 60;
             int totalFrames = 0;
             int lastFrames = 0;
@@ -54,13 +57,13 @@ namespace EnterTheMatrix
                         break;
                     // Handle ESC and CTRL-C
                     case ConsoleKey.Escape:
-                    case ConsoleKey.C when e.Modifiers == ConsoleModifiers.Control: 
+                    case ConsoleKey.C when e.Modifiers == ConsoleModifiers.Control:
                         running = false;
                         break;
                 }
             };
 
-           
+
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
@@ -92,7 +95,13 @@ namespace EnterTheMatrix
 
                 if (showFPS)
                 {
-                    backBuffer.WriteText(0, 0, $"Frames: {totalFrames}\r\nFPS: {fps}\r\nDelay: {delay}ms");
+                    bool bufferWriteSuccess = statsTextBuffer.TryWrite($"Frames: {totalFrames}\r\nFPS: {fps}\r\nDelay: {delay}ms", out int statsTextLength);
+                    Debug.Assert(bufferWriteSuccess, "Stats text buffer is too small for the text. Increase size of the buffer.");
+                    if (bufferWriteSuccess)
+                    {
+                        ReadOnlySpan<char> statsText = statsTextBuffer[..statsTextLength];
+                        backBuffer.WriteText(0, 0, statsText);
+                    }
                 }
 
                 backBuffer.Blit();
@@ -162,7 +171,7 @@ namespace EnterTheMatrix
             // Draw each character in the raindrop.
             // Only draw from the tail to the head. This will allow overlapping drops,
             // unlike if we drew from the top of the column to the bottom (0 to height)
-            
+
             for (var i = rainDrop.Tail; i <= rainDrop.Head; i++)
             {
                 var age = rainDrop.Ages[i];
