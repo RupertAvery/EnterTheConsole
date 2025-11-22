@@ -5,7 +5,7 @@ public class KeyListener
     private ConsoleKeyInfo _lastKeyPressed;
     private CancellationTokenSource _cts = new CancellationTokenSource();
         
-    public EventHandler<ConsoleKeyInfo> KeyPressed;
+    public EventHandler<ConsoleKeyInfo>? KeyPressed;
 
 
     public Task Start()

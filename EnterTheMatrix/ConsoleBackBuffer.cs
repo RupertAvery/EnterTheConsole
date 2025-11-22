@@ -63,7 +63,7 @@ public class ConsoleBackBuffer
     /// <param name="text"></param>
     /// <param name="foreground"></param>
     /// <param name="background"></param>
-    public void WriteText(int x, int y, string text, ConsoleColor[] foreground, ConsoleColor[] background)
+    public void WriteText(int x, int y, ReadOnlySpan<char> text, ConsoleColor[] foreground, ConsoleColor[] background)
     {
 
         int index = (y * Width + x) * 4;
@@ -110,7 +110,7 @@ public class ConsoleBackBuffer
     /// <param name="x"></param>
     /// <param name="y"></param>
     /// <param name="text"></param>
-    public void WriteText(int x, int y, string text)
+    public void WriteText(int x, int y, ReadOnlySpan<char> text)
     {
         WriteText(x, y, text, ForegroundColor, BackgroundColor);
     }
@@ -123,7 +123,7 @@ public class ConsoleBackBuffer
     /// <param name="text"></param>
     /// <param name="foreground"></param>
     /// <param name="background"></param>
-    public void WriteText(int x, int y, string text, ConsoleColor foreground, ConsoleColor background)
+    public void WriteText(int x, int y, ReadOnlySpan<char> text, ConsoleColor foreground, ConsoleColor background)
     {
 
         int index = (y * Width + x) * 4;
