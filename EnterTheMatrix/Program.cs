@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.Serialization.Json;
 
 namespace EnterTheMatrix
 {
@@ -8,15 +9,17 @@ namespace EnterTheMatrix
         {
             Console.CursorVisible = false;
 
+            ANSIConsoleBackBuffer.EnableANSIMode();
+
             int width = Console.WindowWidth, height = Console.WindowHeight;
-            
+
             bool showFPS = false;
             int delay = 60;
             int totalFrames = 0;
             int lastFrames = 0;
             float fps = 0;
 
-            var backBuffer = new ConsoleBackBuffer(width, height);
+            var backBuffer = new ANSIConsoleBackBuffer(width, height);
             var rainDrops = InitializeRainDrops(width, height);
 
             var running = true;
@@ -54,15 +57,16 @@ namespace EnterTheMatrix
                         break;
                     // Handle ESC and CTRL-C
                     case ConsoleKey.Escape:
-                    case ConsoleKey.C when e.Modifiers == ConsoleModifiers.Control: 
+                    case ConsoleKey.C when e.Modifiers == ConsoleModifiers.Control:
                         running = false;
                         break;
                 }
             };
 
-           
+
             var stopWatch = new Stopwatch();
             stopWatch.Start();
+
 
             while (running)
             {
@@ -76,13 +80,11 @@ namespace EnterTheMatrix
                     width = newWidth;
                     height = newHeight;
 
-                    backBuffer = new ConsoleBackBuffer(width, height);
+                    backBuffer = new ANSIConsoleBackBuffer(width, height);
                     rainDrops = InitializeRainDrops(width, height);
                 }
 
                 backBuffer.Clear();
-
-                //backBuffer.Clear('\u2588', ConsoleColor.Cyan, ConsoleColor.Black);
 
                 foreach (var rainDrop in rainDrops)
                 {
@@ -157,48 +159,49 @@ namespace EnterTheMatrix
             return rainDrops;
         }
 
-        static void RenderDrop(RainDrop rainDrop, ConsoleBackBuffer backBuffer)
+        static void RenderDrop(RainDrop rainDrop, ANSIConsoleBackBuffer backBuffer)
         {
             // Draw each character in the raindrop.
             // Only draw from the tail to the head. This will allow overlapping drops,
             // unlike if we drew from the top of the column to the bottom (0 to height)
-            
+
             for (var i = rainDrop.Tail; i <= rainDrop.Head; i++)
             {
                 var age = rainDrop.Ages[i];
                 var character = rainDrop.Chars[i];
 
-                ConsoleColor color;
+                int color;
 
                 if (age == 1)
                 {
-                    color = ConsoleColor.White;
+                    color = ColorHelper.RGB(255, 255, 255);
                 }
                 else if (age == 2)
                 {
-                    color = ConsoleColor.Yellow;
+                    color = ColorHelper.RGB(255, 255, 128);
                 }
                 else if (age == 3)
                 {
-                    color = ConsoleColor.DarkYellow;
+                    color = ColorHelper.RGB(128, 255, 128);
                 }
                 else
                 {
                     // The length of the raindrop is also our max age
+                    // This scales the age between 0 and 1
                     var agePercent = (rainDrop.Ages[i] / (float)rainDrop.Length);
 
-                    //  > 70% of max age : dark gray
-                    //  > 30% of max age : dark green
-                    // <= 30% of max age : green
-
-                    color = agePercent > 0.7
-                        ? ConsoleColor.DarkGray
-                        : agePercent > 0.3
-                            ? ConsoleColor.DarkGreen
-                            : ConsoleColor.Green;
+                    color = agePercent > 0.9
+                        ? ColorHelper.RGB(0, 32, 0)
+                        : agePercent > 0.7
+                            ? ColorHelper.RGB(0, 64, 0)
+                            : agePercent > 0.5
+                                ? ColorHelper.RGB(0, 128, 0)
+                                : agePercent > 0.3
+                                    ? ColorHelper.RGB(0, 192, 0)
+                                    : ColorHelper.RGB(0, 255, 0);
                 }
 
-                backBuffer.SetCell(rainDrop.X, i, character, color, ConsoleColor.Black);
+                backBuffer.SetCell(rainDrop.X, i, character, color, ColorHelper.RGB(0, 0, 0));
             }
 
         }
