@@ -6,9 +6,9 @@ namespace EnterTheMatrix;
 /// <summary>
 /// Creates a buffer for fast graphical updates to the Console
 /// </summary>
-public class ANSIConsoleBackBuffer
+public class AnsiConsoleBackBuffer
 {
-    private StringBuilder stringBuilder;
+    private readonly StringBuilder _stringBuilder;
 
     public int ForegroundColor = ColorHelper.RGB(204, 204, 204);
     public int BackgroundColor = ColorHelper.RGB(0, 0, 0);
@@ -19,20 +19,19 @@ public class ANSIConsoleBackBuffer
     public readonly int Width;
     public readonly int Height;
 
-    private int[] fgBuffer;
-    private int[] bgBuffer;
-    private readonly char[] buffer;
+    private readonly int[] _fgBuffer;
+    private readonly int[] _bgBuffer;
+    private readonly char[] _buffer;
 
-    public ANSIConsoleBackBuffer(int width, int height)
+    public AnsiConsoleBackBuffer(int width, int height)
     {
         Width = width;
         Height = height;
 
-        // Each cell = sizeof(CHAR_INFO) = 4 bytes
-        buffer = new char[width * height];
-        fgBuffer = new int[width * height];
-        bgBuffer = new int[width * height];
-        stringBuilder = new StringBuilder(width * height* 10);
+        _buffer = new char[width * height];
+        _fgBuffer = new int[width * height];
+        _bgBuffer = new int[width * height];
+        _stringBuilder = new StringBuilder(width * height);
     }
 
     /// <summary>
@@ -92,9 +91,9 @@ public class ANSIConsoleBackBuffer
             }
 
 
-            buffer[index] = c;
-            fgBuffer[index] = foreground[i];
-            bgBuffer[index] = background[j];
+            _buffer[index] = c;
+            _fgBuffer[index] = foreground[i];
+            _bgBuffer[index] = background[j];
             index += 1;
             i++;
             if (i >= foreground.Length) i = 0;
@@ -129,7 +128,7 @@ public class ANSIConsoleBackBuffer
         // Write UTF-16 char
         foreach (var c in text)
         {
-            if (index >= buffer.Length) break;
+            if (index >= _buffer.Length) break;
 
             if (c == '\r')
             {
@@ -142,9 +141,9 @@ public class ANSIConsoleBackBuffer
                 continue;
             }
 
-            buffer[index] = c;
-            fgBuffer[index] = foreground;
-            bgBuffer[index] = background;
+            _buffer[index] = c;
+            _fgBuffer[index] = foreground;
+            _bgBuffer[index] = background;
             index += 1;
         }
     }
@@ -162,9 +161,9 @@ public class ANSIConsoleBackBuffer
     /// </summary>
     public void Clear(Char c, int foreground, int background)
     {
-        buffer.AsSpan().Fill(c);
-        fgBuffer.AsSpan().Fill(foreground);
-        bgBuffer.AsSpan().Fill(background);
+        _buffer.AsSpan().Fill(c);
+        _fgBuffer.AsSpan().Fill(foreground);
+        _bgBuffer.AsSpan().Fill(background);
     }
 
     /// <summary>
@@ -177,9 +176,9 @@ public class ANSIConsoleBackBuffer
 
         int index = (y * Width + x);
 
-        buffer[index] = c;
-        fgBuffer[index] = foreground;
-        bgBuffer[index] = background;
+        _buffer[index] = c;
+        _fgBuffer[index] = foreground;
+        _bgBuffer[index] = background;
     }
 
     /// <summary>
@@ -189,53 +188,57 @@ public class ANSIConsoleBackBuffer
     private StringBuilder Render()
     {
         // Reuse the stringBuilder
-        stringBuilder.Clear();
+        _stringBuilder.Clear();
 
         int index = 0;
 
         var size = Width * Height;
 
-        int currentForeground = fgBuffer[index];
-        int currentBackground = bgBuffer[index];
+        int currentForeground = _fgBuffer[index];
+        int currentBackground = _bgBuffer[index];
+
+        // Move to 0,0
+        // Alternative to SetCursorPosition(0,0)
+        //_stringBuilder.Append("\e[H");
 
         // Set the initial foreground and background colors
-        stringBuilder.Append(RGBtoANSIColor(ColorSeqCode.Foreground, currentForeground));
-        stringBuilder.Append(RGBtoANSIColor(ColorSeqCode.Background, currentBackground));
+        _stringBuilder.Append(RgBtoAnsiEscapeCode(ColorSeqCode.Foreground, currentForeground));
+        _stringBuilder.Append(RgBtoAnsiEscapeCode(ColorSeqCode.Background, currentBackground));
 
         bool foregroundChanged = false;
         bool backgroundChanged = false;
 
         int lastIndex = 0;
 
-        var span = buffer.AsSpan();
+        var span = _buffer.AsSpan();
 
         while (index < size)
         {
-            foregroundChanged = currentForeground != fgBuffer[index];
-            backgroundChanged = currentBackground != bgBuffer[index];
+            foregroundChanged = currentForeground != _fgBuffer[index];
+            backgroundChanged = currentBackground != _bgBuffer[index];
 
             // to avoid writing the foreground/background escape sequences for every character,
             // we only write to the StringBuilder when either of the colors change
             if (foregroundChanged || backgroundChanged)
             {
-                currentForeground = fgBuffer[index];
-                currentBackground = bgBuffer[index];
+                currentForeground = _fgBuffer[index];
+                currentBackground = _bgBuffer[index];
 
                 if (lastIndex < index)
                 {
                     // write everything since the last update, all the way to the current position
-                    stringBuilder.Append(span[lastIndex..index]);
+                    _stringBuilder.Append(span[lastIndex..index]);
                     lastIndex = index;
                 }
 
                 // update the color states as needed
                 if (foregroundChanged)
                 {
-                    stringBuilder.Append(RGBtoANSIColor(ColorSeqCode.Foreground, currentForeground));
+                    _stringBuilder.Append(RgBtoAnsiEscapeCode(ColorSeqCode.Foreground, currentForeground));
                 }
                 if (backgroundChanged)
                 {
-                    stringBuilder.Append(RGBtoANSIColor(ColorSeqCode.Background, currentBackground));
+                    _stringBuilder.Append(RgBtoAnsiEscapeCode(ColorSeqCode.Background, currentBackground));
                 }
             }
 
@@ -245,10 +248,10 @@ public class ANSIConsoleBackBuffer
         // If we reached the end of the buffer, check for any pending characters that are unwritten
         if (lastIndex < size)
         {
-            stringBuilder.Append(span[lastIndex..size]);
+            _stringBuilder.Append(span[lastIndex..size]);
         }
 
-        return stringBuilder;
+        return _stringBuilder;
     }
 
     /// <summary>
@@ -263,22 +266,22 @@ public class ANSIConsoleBackBuffer
 
 
     // Color cache
-    private static Dictionary<string, string> RGBColors = new();
+    private static Dictionary<string, string> _rgbColors = new();
 
-    private static string RGBtoANSIColor(ColorSeqCode code, int rgb)
+    private static string RgBtoAnsiEscapeCode(ColorSeqCode code, int rgb)
     {
-        var key = $"{code}:{rgb}";
+        var key = $"{(int)code}:{rgb}";
 
         // Instead of rebuilding the colors everytime we need them, we can cache them
         // There is probably a slight performance benefit to this, but most of the performance is swallowed
         // by rendering the buffer to ANSI and writing it to the console
-        if (!RGBColors.TryGetValue(key, out var value))
+        if (!_rgbColors.TryGetValue(key, out var value))
         {
             int b = rgb & 0xFF;
             int g = (rgb >> 8) & 0xFF;
             int r = (rgb >> 16) & 0xFF;
             value = $"\e[{(int)code};2;{r};{g};{b}m";
-            RGBColors[key] = value;
+            _rgbColors[key] = value;
         }
 
         return value;
@@ -290,10 +293,10 @@ public class ANSIConsoleBackBuffer
         Background = 48
     }
 
-    public static void EnableANSIMode()
+    public static void EnableAnsiMode()
     {
         // Get the handle to the standard output stream
-        var handle = GetStdHandle(STD_OUTPUT_HANDLE);
+        var handle = GetStdHandle(StdOutputHandle);
 
         // Get the current console mode
         uint mode;
@@ -304,7 +307,7 @@ public class ANSIConsoleBackBuffer
         }
 
         // Enable the virtual terminal processing mode
-        mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+        mode |= EnableVirtualTerminalProcessing;
 
         if (!SetConsoleMode(handle, mode))
         {
@@ -314,8 +317,8 @@ public class ANSIConsoleBackBuffer
 
     }
 
-    private const int STD_OUTPUT_HANDLE = -11;
-    private const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 4;
+    private const int StdOutputHandle = -11;
+    private const uint EnableVirtualTerminalProcessing = 4;
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern IntPtr GetStdHandle(int nStdHandle);

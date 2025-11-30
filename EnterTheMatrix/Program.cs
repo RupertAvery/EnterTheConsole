@@ -9,7 +9,7 @@ namespace EnterTheMatrix
         {
             Console.CursorVisible = false;
 
-            ANSIConsoleBackBuffer.EnableANSIMode();
+            AnsiConsoleBackBuffer.EnableAnsiMode();
 
             int width = Console.WindowWidth, height = Console.WindowHeight;
 
@@ -19,7 +19,7 @@ namespace EnterTheMatrix
             int lastFrames = 0;
             float fps = 0;
 
-            var backBuffer = new ANSIConsoleBackBuffer(width, height);
+            var backBuffer = new AnsiConsoleBackBuffer(width, height);
             var rainDrops = InitializeRainDrops(width, height);
 
             var running = true;
@@ -80,7 +80,7 @@ namespace EnterTheMatrix
                     width = newWidth;
                     height = newHeight;
 
-                    backBuffer = new ANSIConsoleBackBuffer(width, height);
+                    backBuffer = new AnsiConsoleBackBuffer(width, height);
                     rainDrops = InitializeRainDrops(width, height);
                 }
 
@@ -159,7 +159,7 @@ namespace EnterTheMatrix
             return rainDrops;
         }
 
-        static void RenderDrop(RainDrop rainDrop, ANSIConsoleBackBuffer backBuffer)
+        static void RenderDrop(RainDrop rainDrop, AnsiConsoleBackBuffer backBuffer)
         {
             // Draw each character in the raindrop.
             // Only draw from the tail to the head. This will allow overlapping drops,
