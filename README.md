@@ -1,3 +1,5 @@
+<img width="1425" height="701" alt="image" src="https://github.com/user-attachments/assets/6de0d43a-3ddd-4716-9fe4-a54a9a5f6158" />
+
 # Digital Rain in the Terminal
 
 This is a sample program that demonstrates buffered drawing to the terminal using P/Invoke.  
